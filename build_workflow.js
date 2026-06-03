@@ -178,6 +178,7 @@ function add(name, type, typeVersion, position, parameters, extra = {}) {
 
 // ---- nodes ----------------------------------------------------------------
 add('Intake Form', 'n8n-nodes-base.formTrigger', 2.2, [-560, 0], {
+  path: 'candidate-intake',
   formTitle: 'Candidate Screening Intake',
   formDescription: 'Paste a candidate resume and the job description. The agent scores fit, routes the candidate, and drafts the next action for recruiter approval.',
   formFields: { values: [

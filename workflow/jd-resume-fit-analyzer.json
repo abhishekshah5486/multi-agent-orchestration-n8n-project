@@ -4,6 +4,7 @@
   "nodes": [
     {
       "parameters": {
+        "path": "candidate-intake",
         "formTitle": "Candidate Screening Intake",
         "formDescription": "Paste a candidate resume and the job description. The agent scores fit, routes the candidate, and drafts the next action for recruiter approval.",
         "formFields": {
