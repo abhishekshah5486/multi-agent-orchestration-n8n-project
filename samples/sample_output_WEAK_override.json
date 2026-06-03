@@ -1,0 +1,12 @@
+{
+  "status": "RECRUITER_OVERRIDE",
+  "candidate_name": "Sam Lee",
+  "candidate_email": "sam.lee@example.com",
+  "role_title": "Senior Backend Engineer",
+  "fit_score": 18,
+  "band": "WEAK",
+  "action_taken": "DISCARDED_BY_RECRUITER",
+  "recruiter_decision": "REJECT - override and discard",
+  "recruiter_notes": "Strong frontend portfolio — forwarding to the frontend pipeline instead of rejecting.",
+  "logged_at": "2026-06-03T17:51:03.example"
+}

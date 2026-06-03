@@ -1,0 +1,5 @@
+# runtime decision logs (keep the dir, ignore live output)
+files/decision_*.json
+
+# os / editor
+.DS_Store

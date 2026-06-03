@@ -1,0 +1,917 @@
+{
+  "id": "jdResumeFitAgent1",
+  "name": "JD↔Resume Fit Analyzer + Interview Kit (Agentic)",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Candidate Screening Intake",
+        "formDescription": "Paste a candidate resume and the job description. The agent scores fit, routes the candidate, and drafts the next action for recruiter approval.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Candidate Name",
+              "fieldType": "text",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Candidate Email",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Role Title",
+              "fieldType": "text",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Resume Text",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Job Description",
+              "fieldType": "textarea",
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "node-0001",
+      "name": "Intake Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -560,
+        0
+      ],
+      "webhookId": "intake-webhook-0001"
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "// Deterministic input guard: reject empty / too-short submissions before spending any AI calls.\nconst item = $input.first().json;\nconst resume = (item['Resume Text'] || '').trim();\nconst jd = (item['Job Description'] || '').trim();\nconst email = (item['Candidate Email'] || '').trim();\n\nconst errors = [];\nif (resume.length < 80) errors.push('Resume Text is too short (minimum 80 characters).');\nif (jd.length < 80) errors.push('Job Description is too short (minimum 80 characters).');\nif (!email.includes('@')) errors.push('Candidate Email looks invalid.');\n\nreturn [{ json: { ...item, _valid: errors.length === 0, _errors: errors } }];"
+      },
+      "id": "node-0002",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -340,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "node-0003",
+              "leftValue": "={{ $json._valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-0004",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "node-0005",
+              "name": "status",
+              "value": "INVALID_INPUT",
+              "type": "string"
+            },
+            {
+              "id": "node-0006",
+              "name": "message",
+              "value": "={{ $json._errors.join(\" \") }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-0007",
+      "name": "Fallback: Request Resubmit",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        100,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "text": "={{ $('Intake Form').item.json['Resume Text'] }}",
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{\n  \"skills\": [\n    \"python\",\n    \"react\",\n    \"aws\"\n  ],\n  \"years_experience\": 4,\n  \"highest_education\": \"B.Tech Computer Science\",\n  \"current_title\": \"Software Engineer\",\n  \"summary\": \"Full-stack engineer with fintech experience.\"\n}",
+        "options": {}
+      },
+      "id": "node-0008",
+      "name": "Resume Extractor",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        100,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "text": "={{ $('Intake Form').item.json['Job Description'] }}",
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{\n  \"must_have_skills\": [\n    \"python\",\n    \"kubernetes\"\n  ],\n  \"nice_to_have_skills\": [\n    \"terraform\"\n  ],\n  \"min_years_experience\": 3,\n  \"seniority\": \"mid\"\n}",
+        "options": {}
+      },
+      "id": "node-0009",
+      "name": "JD Extractor",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "// DETERMINISTIC fit scoring. No AI here - pure, auditable math over the AI-extracted fields.\nfunction ex(nodeName) {\n  const j = $(nodeName).item.json;\n  return j.output || j; // tolerate parser wrapping\n}\nconst resume = ex('Resume Extractor');\nconst jd = ex('JD Extractor');\nconst form = $('Intake Form').item.json;\n\nconst norm = s => String(s || '').toLowerCase().trim();\nconst resumeSkills = (resume.skills || []).map(norm).filter(Boolean);\nconst must = (jd.must_have_skills || []).map(norm).filter(Boolean);\nconst nice = (jd.nice_to_have_skills || []).map(norm).filter(Boolean);\n\n// fuzzy contains so \"react.js\" matches \"react\"\nconst has = sk => resumeSkills.some(r => r.includes(sk) || sk.includes(r));\nconst matchedMust = must.filter(has);\nconst missingMust = must.filter(s => !has(s));\nconst matchedNice = nice.filter(has);\n\nconst mustScore = must.length ? (matchedMust.length / must.length) * 70 : 50;\nconst niceScore = nice.length ? (matchedNice.length / nice.length) * 15 : 7.5;\n\nconst minYears = Number(jd.min_years_experience || 0);\nconst years = Number(resume.years_experience || 0);\nlet expScore;\nif (minYears <= 0) expScore = 12;\nelse if (years >= minYears) expScore = 15;\nelse expScore = Math.max(0, (years / minYears) * 15);\n\nconst fit_score = Math.round(Math.min(100, mustScore + niceScore + expScore));\nlet band;\nif (fit_score >= 75) band = 'STRONG';\nelse if (fit_score >= 50) band = 'MAYBE';\nelse band = 'WEAK';\n\nreturn [{ json: {\n  candidate_name: form['Candidate Name'],\n  candidate_email: form['Candidate Email'],\n  role_title: form['Role Title'],\n  fit_score,\n  band,\n  matched_must_have: matchedMust,\n  missing_must_have: missingMust,\n  matched_nice_to_have: matchedNice,\n  candidate_years: years,\n  required_years: minYears,\n  resume_summary: resume.summary || resume.current_title || '',\n  resume_skills: resumeSkills,\n  must_have_skills: must,\n} }];"
+      },
+      "id": "node-0010",
+      "name": "Compute Fit Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        540,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "node-0011",
+                    "leftValue": "={{ $json.band }}",
+                    "rightValue": "STRONG",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Strong (>=75)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "node-0012",
+                    "leftValue": "={{ $json.band }}",
+                    "rightValue": "MAYBE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Maybe (50-74)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "node-0013",
+                    "leftValue": "={{ $json.band }}",
+                    "rightValue": "WEAK",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Weak (<50)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-0014",
+      "name": "Route by Fit Band",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        760,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "id": "node-0015",
+      "name": "Gemini 2.0 Flash",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        540,
+        200
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GEMINI_CRED",
+          "name": "Google Gemini account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are a senior technical interviewer. A candidate has been assessed as a STRONG fit (score {{ $json.fit_score }}/100) for the role \"{{ $json.role_title }}\".\n\nCandidate: {{ $json.candidate_name }}\nMatched required skills: {{ $json.matched_must_have.join(', ') || 'n/a' }}\nMissing required skills: {{ $json.missing_must_have.join(', ') || 'none' }}\nResume summary: {{ $json.resume_summary }}\n\nWrite a concise interview kit in Markdown with:\n1. 3-4 focus areas tailored to verify their strengths and probe any gaps.\n2. Exactly 5 specific interview questions, each followed by one italic line on what it assesses.\n3. A one-line recommendation for the recruiter.\nKeep it under 250 words. Output Markdown only, no preamble."
+      },
+      "id": "node-0016",
+      "name": "Interview Kit Writer",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        1000,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are a recruiting analyst. A candidate is a BORDERLINE fit (score {{ $json.fit_score }}/100) for \"{{ $json.role_title }}\".\nMatched required skills: {{ $json.matched_must_have.join(', ') || 'none' }}\nMissing required skills: {{ $json.missing_must_have.join(', ') || 'none' }}\nExperience: {{ $json.candidate_years }} yrs vs required {{ $json.required_years }} yrs.\n\nWrite a short Markdown briefing for the recruiter with:\n1. The 2-3 key gaps that create the risk.\n2. Exactly 3 targeted screening questions to resolve the uncertainty before advancing.\n3. A clear recommendation in bold: **ADVANCE TO SCREEN** or **HOLD**, with one line of reasoning.\nUnder 200 words. Markdown only, no preamble."
+      },
+      "id": "node-0017",
+      "name": "Gap Analysis Writer",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        1000,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are a kind, professional recruiter. A candidate ({{ $json.candidate_name }}) is not a fit (score {{ $json.fit_score }}/100) for \"{{ $json.role_title }}\". Missing key skills: {{ $json.missing_must_have.join(', ') || 'core requirements' }}.\n\nWrite a warm, respectful rejection email body (Markdown) that:\n- Greets them by name.\n- Does NOT reveal the internal score or the word \"score\".\n- Gently notes the gap in general, encouraging terms and invites future applications.\nKeep it under 150 words. Output the email body only, no subject line, no preamble."
+      },
+      "id": "node-0018",
+      "name": "Rejection Writer",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        1000,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "node-0019",
+              "name": "action_type",
+              "value": "INTERVIEW_INVITE",
+              "type": "string"
+            },
+            {
+              "id": "node-0020",
+              "name": "draft",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "node-0021",
+              "name": "candidate_name",
+              "value": "={{ $('Compute Fit Score').item.json.candidate_name }}",
+              "type": "string"
+            },
+            {
+              "id": "node-0022",
+              "name": "role_title",
+              "value": "={{ $('Compute Fit Score').item.json.role_title }}",
+              "type": "string"
+            },
+            {
+              "id": "node-0023",
+              "name": "fit_score",
+              "value": "={{ $('Compute Fit Score').item.json.fit_score }}",
+              "type": "number"
+            },
+            {
+              "id": "node-0024",
+              "name": "band",
+              "value": "={{ $('Compute Fit Score').item.json.band }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-0025",
+      "name": "Shape: Interview",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1220,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "node-0026",
+              "name": "action_type",
+              "value": "ADVANCE_TO_SCREEN",
+              "type": "string"
+            },
+            {
+              "id": "node-0027",
+              "name": "draft",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "node-0028",
+              "name": "candidate_name",
+              "value": "={{ $('Compute Fit Score').item.json.candidate_name }}",
+              "type": "string"
+            },
+            {
+              "id": "node-0029",
+              "name": "role_title",
+              "value": "={{ $('Compute Fit Score').item.json.role_title }}",
+              "type": "string"
+            },
+            {
+              "id": "node-0030",
+              "name": "fit_score",
+              "value": "={{ $('Compute Fit Score').item.json.fit_score }}",
+              "type": "number"
+            },
+            {
+              "id": "node-0031",
+              "name": "band",
+              "value": "={{ $('Compute Fit Score').item.json.band }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-0032",
+      "name": "Shape: Screen",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1220,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "node-0033",
+              "name": "action_type",
+              "value": "SEND_REJECTION",
+              "type": "string"
+            },
+            {
+              "id": "node-0034",
+              "name": "draft",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "node-0035",
+              "name": "candidate_name",
+              "value": "={{ $('Compute Fit Score').item.json.candidate_name }}",
+              "type": "string"
+            },
+            {
+              "id": "node-0036",
+              "name": "role_title",
+              "value": "={{ $('Compute Fit Score').item.json.role_title }}",
+              "type": "string"
+            },
+            {
+              "id": "node-0037",
+              "name": "fit_score",
+              "value": "={{ $('Compute Fit Score').item.json.fit_score }}",
+              "type": "number"
+            },
+            {
+              "id": "node-0038",
+              "name": "band",
+              "value": "={{ $('Compute Fit Score').item.json.band }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-0039",
+      "name": "Shape: Reject",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1220,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "resume": "form",
+        "formTitle": "Recruiter Approval Required",
+        "formDescription": "={{ $json.candidate_name }} — {{ $json.role_title }}  |  Fit {{ $json.fit_score }}/100 ({{ $json.band }})  |  Proposed: {{ $json.action_type }}\n\n----- AI DRAFT (review before approving) -----\n\n{{ $json.draft }}",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Decision",
+              "fieldType": "dropdown",
+              "requiredField": true,
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "APPROVE - proceed with this action"
+                  },
+                  {
+                    "option": "REJECT - override and discard"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Recruiter Notes",
+              "fieldType": "textarea",
+              "requiredField": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-0040",
+      "name": "Recruiter Approval",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1460,
+        -120
+      ],
+      "webhookId": "approval-webhook-0001"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "node-0041",
+                    "leftValue": "={{ $json.Decision }}",
+                    "rightValue": "APPROVE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Approved"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "node-0042",
+                    "leftValue": "={{ $json.Decision }}",
+                    "rightValue": "REJECT",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Overridden"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "node-0043",
+      "name": "Approval Decision",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1680,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "// Recruiter APPROVED. Assemble the final, auditable decision record + the message to send.\nconst fit = $('Compute Fit Score').item.json;\nconst approval = $('Recruiter Approval').item.json;\nconst band = fit.band;\n\nlet draft = '', action = '';\nif (band === 'STRONG') { draft = $('Interview Kit Writer').item.json.text; action = 'INTERVIEW_INVITE'; }\nelse if (band === 'MAYBE') { draft = $('Gap Analysis Writer').item.json.text; action = 'ADVANCE_TO_SCREEN'; }\nelse { draft = $('Rejection Writer').item.json.text; action = 'SEND_REJECTION'; }\n\nreturn [{ json: {\n  status: 'APPROVED',\n  candidate_name: fit.candidate_name,\n  candidate_email: fit.candidate_email,\n  role_title: fit.role_title,\n  fit_score: fit.fit_score,\n  band: fit.band,\n  action_taken: action,\n  recruiter_decision: approval.Decision,\n  recruiter_notes: approval['Recruiter Notes'] || '',\n  matched_must_have: fit.matched_must_have,\n  missing_must_have: fit.missing_must_have,\n  final_message: draft,\n  logged_at: new Date().toISOString(),\n} }];"
+      },
+      "id": "node-0044",
+      "name": "Finalize Record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1900,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "// Recruiter OVERRODE the AI recommendation. Log the override (this is the human-in-the-loop safety net).\nconst fit = $('Compute Fit Score').item.json;\nconst approval = $('Recruiter Approval').item.json;\n\nreturn [{ json: {\n  status: 'RECRUITER_OVERRIDE',\n  candidate_name: fit.candidate_name,\n  candidate_email: fit.candidate_email,\n  role_title: fit.role_title,\n  fit_score: fit.fit_score,\n  band: fit.band,\n  action_taken: 'DISCARDED_BY_RECRUITER',\n  recruiter_decision: approval.Decision,\n  recruiter_notes: approval['Recruiter Notes'] || '',\n  logged_at: new Date().toISOString(),\n} }];"
+      },
+      "id": "node-0045",
+      "name": "Log Override",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1900,
+        20
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "toJson",
+        "options": {
+          "fileName": "decision.json",
+          "format": true
+        }
+      },
+      "id": "node-0046",
+      "name": "Decision -> JSON",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2120,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/project/files/decision_{{ $('Compute Fit Score').item.json.candidate_email.split('@')[0] }}_{{ $now.toMillis() }}.json",
+        "dataPropertyName": "data",
+        "options": {}
+      },
+      "id": "node-0047",
+      "name": "Write Decision Log",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        2340,
+        -120
+      ]
+    }
+  ],
+  "connections": {
+    "Intake Form": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "Resume Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fallback: Request Resubmit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume Extractor": {
+      "main": [
+        [
+          {
+            "node": "JD Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JD Extractor": {
+      "main": [
+        [
+          {
+            "node": "Compute Fit Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Fit Score": {
+      "main": [
+        [
+          {
+            "node": "Route by Fit Band",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Fit Band": {
+      "main": [
+        [
+          {
+            "node": "Interview Kit Writer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gap Analysis Writer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rejection Writer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Interview Kit Writer": {
+      "main": [
+        [
+          {
+            "node": "Shape: Interview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gap Analysis Writer": {
+      "main": [
+        [
+          {
+            "node": "Shape: Screen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rejection Writer": {
+      "main": [
+        [
+          {
+            "node": "Shape: Reject",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Interview": {
+      "main": [
+        [
+          {
+            "node": "Recruiter Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Screen": {
+      "main": [
+        [
+          {
+            "node": "Recruiter Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Reject": {
+      "main": [
+        [
+          {
+            "node": "Recruiter Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recruiter Approval": {
+      "main": [
+        [
+          {
+            "node": "Approval Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval Decision": {
+      "main": [
+        [
+          {
+            "node": "Finalize Record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Override",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Record": {
+      "main": [
+        [
+          {
+            "node": "Decision -> JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Override": {
+      "main": [
+        [
+          {
+            "node": "Decision -> JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decision -> JSON": {
+      "main": [
+        [
+          {
+            "node": "Write Decision Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini 2.0 Flash": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Resume Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "JD Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Interview Kit Writer",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Gap Analysis Writer",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Rejection Writer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

@@ -1,0 +1,15 @@
+{
+  "status": "APPROVED",
+  "candidate_name": "Priya Sharma",
+  "candidate_email": "priya.sharma@example.com",
+  "role_title": "Senior Backend Engineer",
+  "fit_score": 92,
+  "band": "STRONG",
+  "action_taken": "INTERVIEW_INVITE",
+  "recruiter_decision": "APPROVE - proceed with this action",
+  "recruiter_notes": "Looks great, schedule with the platform team.",
+  "matched_must_have": ["python", "postgresql", "kubernetes", "rest api design", "aws"],
+  "missing_must_have": [],
+  "final_message": "## Interview Kit — Senior Backend Engineer\n\n**Focus areas**\n1. Payments domain & idempotency\n2. PostgreSQL schema design under high write load\n3. Kubernetes failure modes & on-call ownership\n4. Mentoring / technical leadership\n\n**Questions**\n1. Walk me through designing an idempotent payment-capture API.\n   _Assesses: payments domain depth & API design._\n2. How would you model a ledger in PostgreSQL to avoid double-spend?\n   _Assesses: schema design & transactional reasoning._\n3. A pod is OOM-killing under load — how do you debug it live?\n   _Assesses: real Kubernetes on-call experience._\n4. Describe a fault-tolerant retry strategy across services.\n   _Assesses: distributed-systems judgement._\n5. Tell me about mentoring a struggling engineer.\n   _Assesses: leadership._\n\n**Recommendation:** Strong fit — advance directly to the technical panel.",
+  "logged_at": "2026-06-03T17:42:11.send.example"
+}
