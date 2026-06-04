@@ -73,7 +73,7 @@ explainable, and can't hallucinate. The AI is used where judgement and language 
                                                                                             Decision → JSON ─► Write Decision Log (disk)
 ```
 
-A single **Gemini 2.0 Flash** model node is shared by all five AI nodes (it connects via the
+A single **Groq Llama 3.3 70B** model node is shared by all five AI nodes (it connects via the
 `ai_languageModel` port to each extractor and writer).
 
 ### Node-by-node
@@ -88,7 +88,7 @@ A single **Gemini 2.0 Flash** model node is shared by all five AI nodes (it conn
 | 6 | **JD Extractor** | Information Extractor (AI) | JD text → `{must_have_skills[], nice_to_have_skills[], min_years, seniority}` |
 | 7 | **Compute Fit Score** | Code | **Deterministic** overlap math → `fit_score`, `band`, matched/missing skills |
 | 8 | **Route by Fit Band** | Switch | 3 outputs: STRONG / MAYBE / WEAK |
-| 9 | **Gemini 2.0 Flash** | Google Gemini model | Shared LLM for all AI nodes |
+| 9 | **Groq Llama 3.3 70B** | Groq Chat Model | Shared LLM for all AI nodes (free, fast, generous limits) |
 | 10 | **Interview Kit Writer** | LLM Chain (AI) | STRONG → focus areas + 5 tailored questions |
 | 11 | **Gap Analysis Writer** | LLM Chain (AI) | MAYBE → key gaps + 3 screening questions + recommendation |
 | 12 | **Rejection Writer** | LLM Chain (AI) | WEAK → warm, score-free rejection email |
@@ -151,13 +151,14 @@ docker exec n8n n8n import:workflow --input=/project/workflow/jd-resume-fit-anal
 Then:
 
 1. Open **http://localhost:5678** and create the owner account (one-time, local only).
-2. **Add the Gemini credential:** Settings → Credentials → New → *Google Gemini(PaLM) Api* →
-   paste your API key from https://aistudio.google.com/apikey. Name it `Google Gemini account`.
-3. Open the **JD↔Resume Fit Analyzer** workflow. Open the `Gemini 2.0 Flash` node and select
-   the credential you just created (do it once; all AI nodes share it).
-4. Click **Test workflow**, open the form test URL, and paste a candidate from
-   [`samples/sample_inputs.md`](samples/sample_inputs.md).
-5. Watch the nodes light up → the **Recruiter Approval** form appears → approve or override →
+2. **Add the Groq credential:** get a free key at https://console.groq.com/keys (no card).
+   In n8n: open the workflow → double-click the **Groq Llama 3.3 70B** node → *Credential to
+   connect with* → **Create new credential** → paste the key → Save. (Creating it from the node
+   auto-links it — don't add it via the sidebar or the node won't pick it up.)
+3. Click **Test workflow**, open the form test URL, and paste a candidate from
+   [`samples/sample_inputs.md`](samples/sample_inputs.md). (The one credential is shared by all
+   five AI nodes, so you only configure it once.)
+4. Watch the nodes light up → the **Recruiter Approval** form appears → approve or override →
    the decision JSON lands in [`files/`](files/).
 
 Full step-by-step (with screenshots checklist) is in [`docs/SETUP.md`](docs/SETUP.md).

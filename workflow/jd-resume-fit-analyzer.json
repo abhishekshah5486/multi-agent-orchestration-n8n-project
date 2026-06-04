@@ -142,8 +142,8 @@
         -120
       ],
       "retryOnFail": true,
-      "maxTries": 4,
-      "waitBetweenTries": 15000
+      "maxTries": 3,
+      "waitBetweenTries": 8000
     },
     {
       "parameters": {
@@ -161,8 +161,8 @@
         -120
       ],
       "retryOnFail": true,
-      "maxTries": 4,
-      "waitBetweenTries": 15000
+      "maxTries": 3,
+      "waitBetweenTries": 8000
     },
     {
       "parameters": {
@@ -269,21 +269,21 @@
     },
     {
       "parameters": {
-        "modelName": "models/gemini-2.0-flash",
+        "model": "llama-3.3-70b-versatile",
         "options": {}
       },
       "id": "node-0015",
-      "name": "Gemini 2.0 Flash",
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-      "typeVersion": 1.1,
+      "name": "Groq Llama 3.3 70B",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
       "position": [
         540,
         200
       ],
       "credentials": {
-        "googlePalmApi": {
-          "id": "GEMINI_CRED",
-          "name": "Google Gemini account"
+        "groqApi": {
+          "id": "GROQ_CRED",
+          "name": "Groq account"
         }
       }
     },
@@ -301,8 +301,8 @@
         -320
       ],
       "retryOnFail": true,
-      "maxTries": 4,
-      "waitBetweenTries": 15000
+      "maxTries": 3,
+      "waitBetweenTries": 8000
     },
     {
       "parameters": {
@@ -318,8 +318,8 @@
         -120
       ],
       "retryOnFail": true,
-      "maxTries": 4,
-      "waitBetweenTries": 15000
+      "maxTries": 3,
+      "waitBetweenTries": 8000
     },
     {
       "parameters": {
@@ -335,8 +335,8 @@
         120
       ],
       "retryOnFail": true,
-      "maxTries": 4,
-      "waitBetweenTries": 15000
+      "maxTries": 3,
+      "waitBetweenTries": 8000
     },
     {
       "parameters": {
@@ -894,7 +894,7 @@
         ]
       ]
     },
-    "Gemini 2.0 Flash": {
+    "Groq Llama 3.3 70B": {
       "ai_languageModel": [
         [
           {

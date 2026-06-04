@@ -36,7 +36,7 @@ n8n agent nodes that force the LLM to return JSON matching a schema:
 
 Each reads the raw text straight from the form via an expression
 (`{{ $('Intake Form').item.json['Resume Text'] }}`), so the original input is preserved even
-though the node output is the structured object. Both share the single **Gemini 2.0 Flash**
+though the node output is the structured object. Both share the single **Groq Llama 3.3 70B**
 model node through the `ai_languageModel` connection.
 
 Why two separate extractors? **Role separation.** Each has one schema and one job, which makes

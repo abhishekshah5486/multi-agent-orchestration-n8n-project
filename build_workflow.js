@@ -3,10 +3,10 @@
 const fs = require('fs');
 const path = require('path');
 
-const GEMINI_CRED = { googlePalmApi: { id: 'GEMINI_CRED', name: 'Google Gemini account' } };
+const MODEL_CRED = { groqApi: { id: 'GROQ_CRED', name: 'Groq account' } };
 
-// Retry-on-fail with backoff: absorbs Gemini free-tier 429 rate limits between sequential AI calls.
-const AI_RETRY = { retryOnFail: true, maxTries: 4, waitBetweenTries: 15000 };
+// Retry-on-fail with backoff: absorbs any transient free-tier 429 rate limit between sequential AI calls.
+const AI_RETRY = { retryOnFail: true, maxTries: 3, waitBetweenTries: 8000 };
 
 // ---- AI prompts -----------------------------------------------------------
 const INTERVIEW_KIT_PROMPT =
@@ -244,11 +244,11 @@ add('Route by Fit Band', 'n8n-nodes-base.switch', 3.2, [760, -120], {
   options: {},
 });
 
-// Shared model
-add('Gemini 2.0 Flash', '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', 1.1, [540, 200], {
-  modelName: 'models/gemini-2.0-flash',
+// Shared model (Groq free tier — generous rate limits, OpenAI-compatible)
+add('Groq Llama 3.3 70B', '@n8n/n8n-nodes-langchain.lmChatGroq', 1, [540, 200], {
+  model: 'llama-3.3-70b-versatile',
   options: {},
-}, { credentials: GEMINI_CRED });
+}, { credentials: MODEL_CRED });
 
 // Generators (one per band)
 add('Interview Kit Writer', '@n8n/n8n-nodes-langchain.chainLlm', 1.5, [1000, -320], { promptType: 'define', text: INTERVIEW_KIT_PROMPT }, AI_RETRY);
@@ -346,7 +346,7 @@ connect('Decision -> JSON', 'Write Decision Log');
 
 // ai_languageModel: one shared Gemini model feeds all 5 AI nodes
 ['Resume Extractor', 'JD Extractor', 'Interview Kit Writer', 'Gap Analysis Writer', 'Rejection Writer']
-  .forEach(target => connect('Gemini 2.0 Flash', target, 'ai_languageModel'));
+  .forEach(target => connect('Groq Llama 3.3 70B', target, 'ai_languageModel'));
 
 const workflow = {
   id: 'jdResumeFitAgent1',
