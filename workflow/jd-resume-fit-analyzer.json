@@ -290,7 +290,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "You are a senior technical interviewer. A candidate has been assessed as a STRONG fit (score {{ $json.fit_score }}/100) for the role \"{{ $json.role_title }}\".\n\nCandidate: {{ $json.candidate_name }}\nMatched required skills: {{ $json.matched_must_have.join(', ') || 'n/a' }}\nMissing required skills: {{ $json.missing_must_have.join(', ') || 'none' }}\nResume summary: {{ $json.resume_summary }}\n\nWrite a concise interview kit in Markdown with:\n1. 3-4 focus areas tailored to verify their strengths and probe any gaps.\n2. Exactly 5 specific interview questions, each followed by one italic line on what it assesses.\n3. A one-line recommendation for the recruiter.\nKeep it under 250 words. Output Markdown only, no preamble."
+        "text": "=You are a senior technical interviewer. A candidate has been assessed as a STRONG fit (score {{ $json.fit_score }}/100) for the role \"{{ $json.role_title }}\".\n\nCandidate: {{ $json.candidate_name }}\nMatched required skills: {{ $json.matched_must_have.join(', ') || 'n/a' }}\nMissing required skills: {{ $json.missing_must_have.join(', ') || 'none' }}\nResume summary: {{ $json.resume_summary }}\n\nWrite a concise interview kit in Markdown with:\n1. 3-4 focus areas tailored to verify their strengths and probe any gaps.\n2. Exactly 5 specific interview questions, each followed by one italic line on what it assesses.\n3. A one-line recommendation for the recruiter.\nKeep it under 250 words. Output Markdown only, no preamble."
       },
       "id": "node-0016",
       "name": "Interview Kit Writer",
@@ -307,7 +307,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "You are a recruiting analyst. A candidate is a BORDERLINE fit (score {{ $json.fit_score }}/100) for \"{{ $json.role_title }}\".\nMatched required skills: {{ $json.matched_must_have.join(', ') || 'none' }}\nMissing required skills: {{ $json.missing_must_have.join(', ') || 'none' }}\nExperience: {{ $json.candidate_years }} yrs vs required {{ $json.required_years }} yrs.\n\nWrite a short Markdown briefing for the recruiter with:\n1. The 2-3 key gaps that create the risk.\n2. Exactly 3 targeted screening questions to resolve the uncertainty before advancing.\n3. A clear recommendation in bold: **ADVANCE TO SCREEN** or **HOLD**, with one line of reasoning.\nUnder 200 words. Markdown only, no preamble."
+        "text": "=You are a recruiting analyst. A candidate is a BORDERLINE fit (score {{ $json.fit_score }}/100) for \"{{ $json.role_title }}\".\nMatched required skills: {{ $json.matched_must_have.join(', ') || 'none' }}\nMissing required skills: {{ $json.missing_must_have.join(', ') || 'none' }}\nExperience: {{ $json.candidate_years }} yrs vs required {{ $json.required_years }} yrs.\n\nWrite a short Markdown briefing for the recruiter with:\n1. The 2-3 key gaps that create the risk.\n2. Exactly 3 targeted screening questions to resolve the uncertainty before advancing.\n3. A clear recommendation in bold: **ADVANCE TO SCREEN** or **HOLD**, with one line of reasoning.\nUnder 200 words. Markdown only, no preamble."
       },
       "id": "node-0017",
       "name": "Gap Analysis Writer",
@@ -324,7 +324,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "You are a kind, professional recruiter. A candidate ({{ $json.candidate_name }}) is not a fit (score {{ $json.fit_score }}/100) for \"{{ $json.role_title }}\". Missing key skills: {{ $json.missing_must_have.join(', ') || 'core requirements' }}.\n\nWrite a warm, respectful rejection email body (Markdown) that:\n- Greets them by name.\n- Does NOT reveal the internal score or the word \"score\".\n- Gently notes the gap in general, encouraging terms and invites future applications.\nKeep it under 150 words. Output the email body only, no subject line, no preamble."
+        "text": "=You are a kind, professional recruiter. A candidate ({{ $json.candidate_name }}) is not a fit (score {{ $json.fit_score }}/100) for \"{{ $json.role_title }}\". Missing key skills: {{ $json.missing_must_have.join(', ') || 'core requirements' }}.\n\nWrite a warm, respectful rejection email body (Markdown) that:\n- Greets them by name.\n- Does NOT reveal the internal score or the word \"score\".\n- Gently notes the gap in general, encouraging terms and invites future applications.\nKeep it under 150 words. Output the email body only, no subject line, no preamble."
       },
       "id": "node-0018",
       "name": "Rejection Writer",

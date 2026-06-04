@@ -14,10 +14,14 @@ docker run -d --name n8n -p 5678:5678 \
   -e N8N_RUNNERS_ENABLED=true \
   -e GENERIC_TIMEZONE=Asia/Kolkata \
   -e WEBHOOK_URL=http://localhost:5678/ \
+  -e N8N_RESTRICT_FILE_ACCESS_TO=/project \
   -v n8n_data:/home/node/.n8n \
   -v "$PWD":/project \
   docker.n8n.io/n8nio/n8n:latest
 ```
+> `N8N_RESTRICT_FILE_ACCESS_TO=/project` is required for the **Write Decision Log** node — n8n's
+> default only allows file writes to `~/.n8n-files`, so without it the audit-log step fails with
+> *"file is not writable"*.
 
 Check it's up:
 ```bash

@@ -251,9 +251,10 @@ add('Groq Llama 3.3 70B', '@n8n/n8n-nodes-langchain.lmChatGroq', 1, [540, 200], 
 }, { credentials: MODEL_CRED });
 
 // Generators (one per band)
-add('Interview Kit Writer', '@n8n/n8n-nodes-langchain.chainLlm', 1.5, [1000, -320], { promptType: 'define', text: INTERVIEW_KIT_PROMPT }, AI_RETRY);
-add('Gap Analysis Writer', '@n8n/n8n-nodes-langchain.chainLlm', 1.5, [1000, -120], { promptType: 'define', text: GAP_ANALYSIS_PROMPT }, AI_RETRY);
-add('Rejection Writer', '@n8n/n8n-nodes-langchain.chainLlm', 1.5, [1000, 120], { promptType: 'define', text: REJECTION_PROMPT }, AI_RETRY);
+// NOTE: prompts are prefixed with '=' so n8n evaluates the {{ }} expressions before sending to the LLM.
+add('Interview Kit Writer', '@n8n/n8n-nodes-langchain.chainLlm', 1.5, [1000, -320], { promptType: 'define', text: '=' + INTERVIEW_KIT_PROMPT }, AI_RETRY);
+add('Gap Analysis Writer', '@n8n/n8n-nodes-langchain.chainLlm', 1.5, [1000, -120], { promptType: 'define', text: '=' + GAP_ANALYSIS_PROMPT }, AI_RETRY);
+add('Rejection Writer', '@n8n/n8n-nodes-langchain.chainLlm', 1.5, [1000, 120], { promptType: 'define', text: '=' + REJECTION_PROMPT }, AI_RETRY);
 
 // Shape each branch into a common {action_type, draft, ...} item for the approval form
 function shape(name, pos, actionType) {

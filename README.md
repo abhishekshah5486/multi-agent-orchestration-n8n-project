@@ -140,9 +140,12 @@ Skills are matched with a fuzzy `contains` so `react.js` matches `react`. The th
 docker run -d --name n8n -p 5678:5678 \
   -e N8N_SECURE_COOKIE=false -e N8N_RUNNERS_ENABLED=true \
   -e GENERIC_TIMEZONE=Asia/Kolkata -e WEBHOOK_URL=http://localhost:5678/ \
+  -e N8N_RESTRICT_FILE_ACCESS_TO=/project \
   -v n8n_data:/home/node/.n8n \
   -v "$PWD":/project \
   docker.n8n.io/n8nio/n8n:latest
+# N8N_RESTRICT_FILE_ACCESS_TO=/project lets the audit-log node write to ./files
+# (n8n's default only permits ~/.n8n-files).
 
 # Import the workflow
 docker exec n8n n8n import:workflow --input=/project/workflow/jd-resume-fit-analyzer.json
