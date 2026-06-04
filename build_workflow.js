@@ -5,6 +5,9 @@ const path = require('path');
 
 const GEMINI_CRED = { googlePalmApi: { id: 'GEMINI_CRED', name: 'Google Gemini account' } };
 
+// Retry-on-fail with backoff: absorbs Gemini free-tier 429 rate limits between sequential AI calls.
+const AI_RETRY = { retryOnFail: true, maxTries: 4, waitBetweenTries: 15000 };
+
 // ---- AI prompts -----------------------------------------------------------
 const INTERVIEW_KIT_PROMPT =
 `You are a senior technical interviewer. A candidate has been assessed as a STRONG fit (score {{ $json.fit_score }}/100) for the role "{{ $json.role_title }}".
@@ -190,7 +193,7 @@ add('Intake Form', 'n8n-nodes-base.formTrigger', 2.2, [-560, 0], {
   ] },
   responseMode: 'onReceived',
   options: {},
-}, { webhookId: 'intake-webhook-0001' });
+}, { webhookId: 'candidate-intake' });
 
 add('Validate Input', 'n8n-nodes-base.code', 2, [-340, 0], { language: 'javaScript', jsCode: VALIDATE_CODE });
 
@@ -215,7 +218,7 @@ add('Resume Extractor', '@n8n/n8n-nodes-langchain.informationExtractor', 1.2, [1
     summary: 'Full-stack engineer with fintech experience.',
   }, null, 2),
   options: {},
-});
+}, AI_RETRY);
 
 add('JD Extractor', '@n8n/n8n-nodes-langchain.informationExtractor', 1.2, [320, -120], {
   text: "={{ $('Intake Form').item.json['Job Description'] }}",
@@ -227,7 +230,7 @@ add('JD Extractor', '@n8n/n8n-nodes-langchain.informationExtractor', 1.2, [320, 
     seniority: 'mid',
   }, null, 2),
   options: {},
-});
+}, AI_RETRY);
 
 add('Compute Fit Score', 'n8n-nodes-base.code', 2, [540, -120], { language: 'javaScript', jsCode: COMPUTE_FIT_CODE });
 
@@ -248,9 +251,9 @@ add('Gemini 2.0 Flash', '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', 1.1, [540
 }, { credentials: GEMINI_CRED });
 
 // Generators (one per band)
-add('Interview Kit Writer', '@n8n/n8n-nodes-langchain.chainLlm', 1.5, [1000, -320], { promptType: 'define', text: INTERVIEW_KIT_PROMPT });
-add('Gap Analysis Writer', '@n8n/n8n-nodes-langchain.chainLlm', 1.5, [1000, -120], { promptType: 'define', text: GAP_ANALYSIS_PROMPT });
-add('Rejection Writer', '@n8n/n8n-nodes-langchain.chainLlm', 1.5, [1000, 120], { promptType: 'define', text: REJECTION_PROMPT });
+add('Interview Kit Writer', '@n8n/n8n-nodes-langchain.chainLlm', 1.5, [1000, -320], { promptType: 'define', text: INTERVIEW_KIT_PROMPT }, AI_RETRY);
+add('Gap Analysis Writer', '@n8n/n8n-nodes-langchain.chainLlm', 1.5, [1000, -120], { promptType: 'define', text: GAP_ANALYSIS_PROMPT }, AI_RETRY);
+add('Rejection Writer', '@n8n/n8n-nodes-langchain.chainLlm', 1.5, [1000, 120], { promptType: 'define', text: REJECTION_PROMPT }, AI_RETRY);
 
 // Shape each branch into a common {action_type, draft, ...} item for the approval form
 function shape(name, pos, actionType) {
@@ -283,7 +286,7 @@ add('Recruiter Approval', 'n8n-nodes-base.wait', 1.1, [1460, -120], {
     { fieldLabel: 'Recruiter Notes', fieldType: 'textarea', requiredField: false },
   ] },
   options: {},
-}, { webhookId: 'approval-webhook-0001' });
+}, { webhookId: 'recruiter-approval' });
 
 // Decision gate on the human's choice
 add('Approval Decision', 'n8n-nodes-base.switch', 3.2, [1680, -120], {

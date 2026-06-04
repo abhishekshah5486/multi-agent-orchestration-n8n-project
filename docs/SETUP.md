@@ -67,8 +67,20 @@ Toggle the workflow **Active**. Then:
 - Intake form: **http://localhost:5678/form/candidate-intake**
 - The approval form URL is generated per run and shown in the execution.
 
+## Gemini free-tier rate limits (read this before recording)
+The free tier caps requests **per minute** and **per day**. One run makes ~3 Gemini calls,
+which is fine — but if you run many times in a row (or hit "Test workflow" repeatedly) you'll
+see `429 — The service is receiving too many requests`. To avoid it during your demo:
+- Do **one clean run** for the recording rather than many rapid retries.
+- The AI nodes already have **Retry on Fail** (4 tries, 15s apart), so a transient per-minute
+  limit recovers on its own — the run just takes a little longer.
+- If you've exhausted the **daily** quota from testing, wait for the reset (midnight US-Pacific)
+  or switch the model on the `Gemini 2.0 Flash` node to `models/gemini-1.5-flash`.
+
 ## Troubleshooting
-- **AI node error "credentials not set"** → redo step 5 on the `Gemini 2.0 Flash` node.
+- **`429 / too many requests`** → free-tier rate limit, see the section above. Not a workflow bug.
+- **AI node error "credentials not set"** → open the `Gemini 2.0 Flash` node and re-select your
+  credential from the dropdown (this is the one link that doesn't travel with the exported JSON).
 - **Model not found** → open the model node, re-pick a model from the dropdown (e.g.
   `models/gemini-2.0-flash` or `models/gemini-1.5-flash`).
 - **Form URL 404** → in test mode the URL only works right after clicking *Test workflow*;

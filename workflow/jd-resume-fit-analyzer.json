@@ -47,7 +47,7 @@
         -560,
         0
       ],
-      "webhookId": "intake-webhook-0001"
+      "webhookId": "candidate-intake"
     },
     {
       "parameters": {
@@ -140,7 +140,10 @@
       "position": [
         100,
         -120
-      ]
+      ],
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 15000
     },
     {
       "parameters": {
@@ -156,7 +159,10 @@
       "position": [
         320,
         -120
-      ]
+      ],
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 15000
     },
     {
       "parameters": {
@@ -293,7 +299,10 @@
       "position": [
         1000,
         -320
-      ]
+      ],
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 15000
     },
     {
       "parameters": {
@@ -307,7 +316,10 @@
       "position": [
         1000,
         -120
-      ]
+      ],
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 15000
     },
     {
       "parameters": {
@@ -321,7 +333,10 @@
       "position": [
         1000,
         120
-      ]
+      ],
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 15000
     },
     {
       "parameters": {
@@ -521,7 +536,7 @@
         1460,
         -120
       ],
-      "webhookId": "approval-webhook-0001"
+      "webhookId": "recruiter-approval"
     },
     {
       "parameters": {
