@@ -201,7 +201,7 @@ Full step-by-step (with screenshots checklist) is in [`docs/SETUP.md`](docs/SETU
 │   └── sample_inputs.md              # demo inputs for all branches
 ├── docs/
 │   ├── SETUP.md                      # detailed local setup
-│   ├── WORKFLOW_EXPLANATION.md       # deeper node + data-flow walkthrough
+│   └── WORKFLOW_EXPLANATION.md       # deeper node + data-flow walkthrough
 ├── files/                            # decision audit logs land here at runtime
 └── screenshots/                      # add your screenshots here for submission
 ```
@@ -212,4 +212,5 @@ Full step-by-step (with screenshots checklist) is in [`docs/SETUP.md`](docs/SETU
 
 This is an individual submission. The entire workflow — problem framing, the deterministic
 scoring design, the three-way routing, the role-specialized AI agents, and the
-human-in-the-loop approval gate — was designed and built by me. See
+human-in-the-loop approval gate — was designed and built by me, and explained in the
+accompanying video walkthrough.
